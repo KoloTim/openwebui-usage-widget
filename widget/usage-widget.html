@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open WebUI Usage</title>
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    background: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+  }
+  #wrap {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    justify-content: flex-end; align-items: flex-end;
+    gap: 8px; padding: 0;
+    pointer-events: none;
+  }
+  :root {
+    --bg: #161b22; --bg2: #0d1117; --border: #30363d; --text: #e6edf3;
+    --dim: #8b949e; --accent: #58a6ff; --green: #3fb950; --yellow: #d29922;
+    --red: #f85149; --purple: #bc8cff; --cyan: #56d4dd;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #ffffff; --bg2: #f6f8fa; --border: #d0d7de; --text: #1f2328;
+      --dim: #656d76; --accent: #0969da; --green: #1a7f37; --yellow: #9a6700;
+      --red: #cf222e; --purple: #8250df; --cyan: #1b7c83;
+    }
+  }
+
+  .pill {
+    cursor: pointer; user-select: none; pointer-events: auto;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 7px 13px; font-size: 12.5px; font-weight: 600;
+    box-shadow: 0 4px 18px rgba(0,0,0,.28);
+    font-variant-numeric: tabular-nums;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .pill:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(0,0,0,.34); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex: 0 0 auto; }
+  .dot.warn { background: var(--yellow); }
+  .dot.crit { background: var(--red); }
+  .dot.off  { background: var(--dim); }
+  .pill .sep { color: var(--border); font-weight: 400; }
+  .pill .sub { color: var(--dim); font-weight: 500; }
+
+  .panel {
+    display: none; pointer-events: auto;
+    width: 370px; max-height: 460px; overflow-y: auto;
+    background: var(--bg); color: var(--text);
+    border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.4); padding: 16px;
+    font-size: 13px;
+  }
+  .panel.open { display: block; animation: pop .16s ease; }
+  @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; } }
+
+  .head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .head h1 { font-size: 13px; font-weight: 700; margin: 0; letter-spacing: .01em; }
+  .head .x {
+    cursor: pointer; color: var(--dim); font-size: 17px; line-height: 1;
+    padding: 2px 5px; border-radius: 5px;
+  }
+  .head .x:hover { background: var(--bg2); color: var(--text); }
+
+  .big { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .big small { font-size: 13px; font-weight: 500; color: var(--dim); margin-left: 5px; }
+  .cap { color: var(--dim); font-size: 11.5px; margin-top: 3px; }
+
+  .bar { height: 8px; background: var(--bg2); border-radius: 999px; overflow: hidden; margin: 11px 0 4px;
+         border: 1px solid var(--border); }
+  .bar > i { display: block; height: 100%; background: var(--green); border-radius: 999px; transition: width .4s ease; }
+  .bar > i.warn { background: var(--yellow); }
+  .bar > i.crit { background: var(--red); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 13px 0 4px; }
+  .cell { background: var(--bg2); border: 1px solid var(--border); border-radius: 9px; padding: 9px 10px; }
+  .cell .k { color: var(--dim); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; }
+  .cell .v { font-size: 16px; font-weight: 650; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .v.green { color: var(--green); } .v.purple { color: var(--purple); }
+  .v.accent { color: var(--accent); } .v.cyan { color: var(--cyan); }
+
+  .sect { font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+          color: var(--dim); font-weight: 700; margin: 15px 0 7px; }
+
+  .spark { display: flex; align-items: flex-end; gap: 2px; height: 42px;
+           background: var(--bg2); border: 1px solid var(--border);
+           border-radius: 9px; padding: 6px 7px; }
+  .spark > span { flex: 1; background: var(--accent); border-radius: 2px 2px 1px 1px;
+                  min-height: 2px; opacity: .85; }
+  .spark > span:hover { opacity: 1; }
+  .spark-x { display: flex; justify-content: space-between; color: var(--dim);
+             font-size: 10px; margin-top: 4px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 12.5px; }
+  tr:last-child td { border-bottom: 0; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; color: var(--dim); white-space: nowrap; }
+  td.m { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px;
+         overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+  .tag { font-size: 9.5px; font-weight: 700; padding: 1px 5px; border-radius: 4px;
+         margin-left: 5px; vertical-align: 1px; }
+  .t-FAST{background:rgba(63,185,80,.16);color:var(--green)}
+  .t-RIDER{background:rgba(88,166,255,.16);color:var(--accent)}
+  .t-CODE{background:rgba(188,140,255,.16);color:var(--purple)}
+  .t-PLAN{background:rgba(210,153,34,.18);color:var(--yellow)}
+  .t-DOCS{background:rgba(86,212,221,.16);color:var(--cyan)}
+  .t-HARD{background:rgba(248,81,73,.16);color:var(--red)}
+  .t-VISION{background:rgba(227,179,65,.18);color:var(--yellow)}
+
+  .foot { color: var(--dim); font-size: 10.5px; margin-top: 13px; line-height: 1.55;
+          border-top: 1px solid var(--border); padding-top: 9px; }
+  .err { color: var(--red); font-size: 12px; padding: 10px; text-align: center; }
+  .panel::-webkit-scrollbar { width: 8px; }
+  .panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="panel" id="panel">
+    <div id="body"><div class="err">Loading…</div></div>
+  </div>
+  <div class="pill" id="pill" title="Open WebUI usage">
+    <span class="dot off" id="dot"></span>
+    <span id="pillText">…</span>
+  </div>
+</div>
+
+<script>
+(function () {
+  var OPEN_KEY = 'owuiUsageOpen';
+  var panel = document.getElementById('panel');
+  var pill  = document.getElementById('pill');
+  var body  = document.getElementById('body');
+  var dot   = document.getElementById('dot');
+  var pillText = document.getElementById('pillText');
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  function fmt(n) {
+    n = Number(n) || 0;
+    if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return String(n);
+  }
+  function colour(frac) { return frac >= 0.9 ? 'crit' : frac >= 0.7 ? 'warn' : 'ok'; }
+
+  /* --- size negotiation: tell the parent how big we need to be -------- */
+  function reportSize() {
+    var open = panel.classList.contains('open');
+    var w = open ? (panel.offsetWidth + 2) : Math.max(pill.offsetWidth + 2, 180);
+    var h = open ? (panel.offsetHeight + pill.offsetHeight + 12) : (pill.offsetHeight + 2);
+    parent.postMessage({ koloWidget: 'resize', w: w, h: h }, '*');
+  }
+  window.addEventListener('load', reportSize);
+  window.addEventListener('resize', reportSize);
+
+  if (localStorage.getItem(OPEN_KEY) === '1') panel.classList.add('open');
+
+  pill.addEventListener('click', function () {
+    panel.classList.toggle('open');
+    localStorage.setItem(OPEN_KEY, panel.classList.contains('open') ? '1' : '0');
+    if (panel.classList.contains('open')) load();
+    reportSize();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { panel.classList.remove('open'); localStorage.setItem(OPEN_KEY, '0'); reportSize(); }
+  });
+
+  function render(d) {
+    var t = d.totals || {}, r = d.recent || {}, budget = Number(d.budget) || 0;
+    var used = t.total || 0;
+    var frac = budget > 0 ? Math.min(used / budget, 1) : 0;
+
+    var c = budget > 0 ? colour(frac) : 'off';
+    dot.className = 'dot ' + (c === 'ok' ? '' : c);
+    pillText.innerHTML = budget > 0
+      ? '<span>' + (frac * 100).toFixed(frac < 0.1 ? 1 : 0) + '%</span>' +
+        '<span class="sep">·</span><span class="sub">' + fmt(used) + ' tok</span>'
+      : '<span>' + fmt(used) + '</span>' +
+        '<span class="sep">·</span><span class="sub">' + fmt(t.requests) + ' req</span>';
+
+    var h = '';
+    h += '<div class="head"><h1>Open WebUI Usage</h1><span class="x" id="x">×</span></div>';
+    h += '<div class="big">' + fmt(used) + '<small>tokens tracked</small></div>';
+    h += '<div class="cap">' + (budget > 0
+          ? fmt(used) + ' of ' + fmt(budget) + ' weekly budget'
+          : 'no cap configured — tracking only') + '</div>';
+
+    if (budget > 0) {
+      h += '<div class="bar"><i class="' + (c === 'ok' ? '' : c) +
+           '" style="width:' + Math.max(frac * 100, 1.5).toFixed(1) + '%"></i></div>';
+      h += '<div class="cap">' +
+           (frac >= 0.9 ? 'Critically close to the weekly lockout limit'
+            : frac >= 0.7 ? 'Over 70% of the weekly budget used'
+            : Math.round((1 - frac) * 100) + '% of budget remaining') + '</div>';
+    }
+
+    h += '<div class="grid">';
+    h += '<div class="cell"><div class="k">Prompt</div><div class="v accent">' + fmt(t.prompt) + '</div></div>';
+    h += '<div class="cell"><div class="k">Completion</div><div class="v purple">' + fmt(t.completion) + '</div></div>';
+    h += '<div class="cell"><div class="k">Cached (saved)</div><div class="v green">' + fmt(t.cached) + '</div></div>';
+    h += '<div class="cell"><div class="k">Requests</div><div class="v">' + fmt(t.requests) + '</div></div>';
+    h += '</div>';
+
+    h += '<div class="sect">Last 24 hours</div>';
+    h += '<div class="cell" style="display:flex;gap:14px">' +
+         '<div><div class="k">Tokens</div><div class="v cyan">' + fmt(r.total) + '</div></div>' +
+         '<div><div class="k">Requests</div><div class="v">' + fmt(r.requests) + '</div></div>' +
+         '</div>';
+
+    var hourly = d.hourly || [];
+    if (hourly.length) {
+      var max = Math.max.apply(null, hourly.map(function (x) { return x.t; }).concat([1]));
+      h += '<div class="sect">Hourly volume</div><div class="spark">';
+      hourly.forEach(function (x) {
+        var pct = Math.max((x.t / max) * 100, 3);
+        h += '<span style="height:' + pct.toFixed(1) + '%" title="' +
+             esc(x.h) + ' — ' + fmt(x.t) + ' tokens"></span>';
+      });
+      h += '</div><div class="spark-x"><span>' + esc(hourly[0].h) + '</span><span>now</span></div>';
+    }
+
+    var models = d.models || [];
+    if (models.length) {
+      h += '<div class="sect">Top models</div><table>';
+      models.forEach(function (m) {
+        h += '<tr><td class="m" title="' + esc(m.name) + '">' + esc(m.name) +
+             (m.route ? '<span class="tag t-' + esc(m.route) + '">' + esc(m.route) + '</span>' : '') +
+             '</td><td class="n">' + fmt(m.total) + ' · ' + fmt(m.requests) + '×</td></tr>';
+      });
+      h += '</table>';
+    }
+
+    var since = d.since ? new Date(d.since * 1000).toLocaleDateString(undefined,
+                  { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+    var gen = d.generated ? new Date(d.generated * 1000).toLocaleTimeString(undefined,
+                  { hour: '2-digit', minute: '2-digit' }) : '—';
+    h += '<div class="foot">Metered by the your proxy · since ' + esc(since) +
+         '<br>Updated ' + esc(gen) + ' · auto-refreshes every 60s</div>';
+
+    body.innerHTML = h;
+    var x = document.getElementById('x');
+    if (x) x.addEventListener('click', function () {
+      panel.classList.remove('open');
+      localStorage.setItem(OPEN_KEY, '0');
+      reportSize();
+    });
+    reportSize();
+  }
+
+  function load() {
+    fetch('usage-stats.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (d) {
+        if (!d || !d.totals) throw new Error('malformed stats');
+        render(d);
+      })
+      .catch(function (e) {
+        body.innerHTML = '<div class="err">Stats unavailable<br><small>' + esc(e.message) + '</small></div>';
+        pillText.textContent = 'stats offline';
+        dot.className = 'dot off';
+        reportSize();
+      });
+  }
+
+  load();
+  setInterval(load, 60000);
+})();
+</script>
+</body>
+</html>

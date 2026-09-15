@@ -1,0 +1,4 @@
+stats/
+*.pyc
+__pycache__/
+.env

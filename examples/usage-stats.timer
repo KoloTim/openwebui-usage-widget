@@ -1,0 +1,13 @@
+[Unit]
+Description=Refresh Open WebUI usage stats every minute
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=60s
+
+[Unit]
+Wants=timers.target
+Before=timers.target
+
+[Install]
+WantedBy=timers.target

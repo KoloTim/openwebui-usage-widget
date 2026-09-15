@@ -1,0 +1,6 @@
+[Unit]
+Description=Open WebUI usage widget: refresh usage-stats.json
+
+[Service]
+Type=oneshot
+ExecStart=%h/openwebui-usage-widget/examples/push-stats.sh
