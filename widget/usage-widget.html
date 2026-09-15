@@ -155,14 +155,27 @@
   function colour(frac) { return frac >= 0.9 ? 'crit' : frac >= 0.7 ? 'warn' : 'ok'; }
 
   /* --- size negotiation: tell the parent how big we need to be -------- */
-  function reportSize() {
-    var open = panel.classList.contains('open');
-    var w = open ? (panel.offsetWidth + 2) : Math.max(pill.offsetWidth + 2, 180);
-    var h = open ? (panel.offsetHeight + pill.offsetHeight + 12) : (pill.offsetHeight + 2);
-    parent.postMessage({ koloWidget: 'resize', w: w, h: h }, '*');
+  var lastW = 0, lastH = 0, timers = [];
+  function reportSize(delay) {
+    var run = function () {
+      var open = panel.classList.contains('open');
+      var w = open ? (panel.offsetWidth + 2) : Math.max(pill.offsetWidth + 2, 180);
+      var h = open ? (panel.scrollHeight + pill.offsetHeight + 14) : (pill.offsetHeight + 2);
+      w = Math.round(w); h = Math.round(h);
+      if (w === lastW && h === lastH) return;
+      lastW = w; lastH = h;
+      parent.postMessage({ koloWidget: 'resize', w: w, h: h }, '*');
+    };
+    if (delay) { timers.push(setTimeout(run, delay)); }
+    else { run(); }
+  }
+  /* re-check after open: animation (160ms) and content render can change size */
+  function reportSizeSettled() {
+    timers.forEach(clearTimeout); timers = [];
+    reportSize();
+    reportSize(60); reportSize(200); reportSize(400);
   }
   window.addEventListener('load', reportSize);
-  window.addEventListener('resize', reportSize);
 
   if (localStorage.getItem(OPEN_KEY) === '1') panel.classList.add('open');
 
@@ -170,10 +183,10 @@
     panel.classList.toggle('open');
     localStorage.setItem(OPEN_KEY, panel.classList.contains('open') ? '1' : '0');
     if (panel.classList.contains('open')) load();
-    reportSize();
+    reportSizeSettled();
   });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { panel.classList.remove('open'); localStorage.setItem(OPEN_KEY, '0'); reportSize(); }
+    if (e.key === 'Escape') { panel.classList.remove('open'); localStorage.setItem(OPEN_KEY, '0'); reportSizeSettled(); }
   });
 
   function render(d) {
@@ -253,9 +266,9 @@
     if (x) x.addEventListener('click', function () {
       panel.classList.remove('open');
       localStorage.setItem(OPEN_KEY, '0');
-      reportSize();
+      reportSizeSettled();
     });
-    reportSize();
+    reportSizeSettled();
   }
 
   function load() {
@@ -269,7 +282,7 @@
         body.innerHTML = '<div class="err">Stats unavailable<br><small>' + esc(e.message) + '</small></div>';
         pillText.textContent = 'stats offline';
         dot.className = 'dot off';
-        reportSize();
+        reportSizeSettled();
       });
   }
 

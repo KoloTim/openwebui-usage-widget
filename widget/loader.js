@@ -21,7 +21,7 @@
     f.title = 'KoloLab token usage';
     f.style.cssText = [
       'position:fixed',
-      'bottom:16px',
+      'bottom:150px',
       'right:16px',
       'width:230px',          /* pill-sized initially */
       'height:52px',
